@@ -18,10 +18,89 @@ function start() {
     const ratio = w/h;
     const sf = Math.min(w, h)/2;
 
+    const fps = 40;
+
+    const keyPressActions = {};
+
+    function bindKeyPress(key, action) {
+        keyPressActions[key] = action;
+    }
+
+    function unbindKeyPress(key) {
+        delete(keyPressActions[key]);
+    }
+
+    window.addEventListener("keypress", function(e) {
+        if (keyPressActions[e.key] != null) {
+            keyPressActions[e.key]();
+        }
+    });
+
+    const whilePressedActions = {};
+
+    function whilePressed(key, action) {
+        whilePressedActions[key] = action;
+    }
+
+    window.addEventListener("keydown", function (e) {
+        if (whilePressedActions[e.key] != null) {
+            isPressed[e.key] = true;
+        }
+    });
+
+    window.addEventListener("keyup", function (e) {
+        if (whilePressedActions[e.key] != null) {
+            isPressed[e.key] = false;
+        }
+    });
+
+    function handleKeys() {
+        for (let key in whilePressedActions) {
+            if (isPressed[key]) {
+                whilePressedActions[key]();
+            }
+        }
+        boomParam = boomParam * 0.9;
+        timestep -= (timestep - (1/fps)) / 200;
+    }
+
+    const isPressed = {};
+
+    let param1 = 0;
+    let param2 = 0;
+
+    whilePressed("a", function() {
+        param1 -= 0.01;
+        while (param1 < -1) param1 += 2;
+    });
+    whilePressed("d", function() {
+        param1 += 0.01;
+        while (param1 > 1) param1 -= 2;
+    });
+    whilePressed("w", function() {
+        param2 -= 0.01;
+        while (param2 < -1) param2 += 2;
+    });
+    whilePressed("s", function() {
+        param2 += 0.01;
+        while (param2 > 1) param2 -= 2;
+    });
+    whilePressed("b", function() {
+        boomParam = 1;
+    });
+
+    let boomParam = 0;
+
+    let timestep = 1/fps;
+    whilePressed("x", function() { timestep += 0.1 * 1/fps });
+    whilePressed("z", function() { timestep -= 0.1 * 1/fps });
+
     function resetTransform() {
         g.setTransform(1,0,0,1,0,0);
         g.translate(w / 2, h / 2);
     }
+    resetTransform();
+
 
     function somewhereSomehow() {
         g.rotate(Math.random()*tau);
@@ -75,11 +154,21 @@ function start() {
         g.stroke();
     }
 
+    let ca = [128,64,255];
+    let cb = [64,192,255];
+
+    function randByte() {
+        return Math.floor(Math.random() * 255);
+    }
+
+    bindKeyPress("y", function() {
+        ca = [randByte(), randByte(), randByte()];
+        cb = [randByte(), randByte(), randByte()];
+    });
+
     let colourCounter = 0;
 
     function pickAColourAnyColour() {
-        const a = [128,64,255];
-        const b = [64,192,255];
         const steps = 20;
 
         colourCounter++;
@@ -88,7 +177,7 @@ function start() {
         let bV = 1-aV;
         function f(x) { return x < 0 ? 0 : x > 255 ? 255 : Math.floor(x); }
 
-        const blend = [f(a[0] * aV + b[0] * bV), f(a[1] * aV + b[1] * bV), f(a[2] * aV + b[2] * bV)]
+        const blend = [f(ca[0] * aV + cb[0] * bV), f(ca[1] * aV + cb[1] * bV), f(ca[2] * aV + cb[2] * bV)]
 
         return "rgb(" + blend[0] + "," + blend[1] + "," + blend[2] + ")";
     }
@@ -98,29 +187,37 @@ function start() {
         g.fillRect(-w/2,-h/2,w,h);
     }
 
-    function divideAndConquer(rot) {
+    function divideAndConquer(rot, op) {
         bg.clearRect(0,0,w,h);
         bg.scale(0.5,0.5);
-        bg.drawImage(canvas, 0,0);
-        bg.drawImage(canvas, w,0);
-        bg.drawImage(canvas, 0,h);
-        bg.drawImage(canvas, w,h);
+        for (let xx = 0; xx < 2; xx ++) {
+            for (let yy = 0; yy < 2; yy++) {
+                bg.drawImage(canvas, w * xx, h * yy);
+                // bg.drawImage(canvas, 0, 0);
+                // bg.drawImage(canvas, w, 0);
+                // bg.drawImage(canvas, 0, h);
+                // bg.drawImage(canvas, w, h);
+            }
+        }
+
         bg.setTransform(1,0,0,1,0,0);
 
-        g.globalCompositeOperation = "screen";
+        g.globalCompositeOperation = op != null ? op : "screen";
+        g.rotate(rot);
         //g.globalAlpha = 0.9;
         g.drawImage(buffer, -w/2,-h/2);
+        resetTransform();
         g.globalCompositeOperation = "source-over";
     }
 
-    function blurr() {
+    function blurr(px) {
         //g.clearRect(0,0,w,h);
-        g.filter = "blur(10px)";
+        g.filter = "blur(" + px + "px)";
         g.drawImage(canvas, -w/2,-h/2);
-        g.filter = "";
+        g.filter = "none";
     }
-    
-    function rotoZoom(sf, rot) {
+
+    function rotoZoom(sf, rot, zoom) {
         bg.clearRect(0,0,w,h);
         bg.scale(sf, sf);
 
@@ -128,8 +225,9 @@ function start() {
         bg.setTransform(1,0,0,1,0,0);
         g.globalCompositeOperation = "difference";
         g.rotate(rot);
+        g.scale(zoom,zoom);
         g.drawImage(buffer, -w/2, -h/2);
-        //resetTransform();
+        resetTransform();
         g.globalCompositeOperation = "source-over";
     }
 
@@ -179,7 +277,7 @@ function start() {
 
     function sundayClubXO(time,frame) {
         if (Math.random() < 0.1) {
-           divideAndConquer();
+           divideAndConquer(0);
         }
         if (Math.random() < 0.03) {
             fade(1);
@@ -190,6 +288,7 @@ function start() {
         if (frame % 10 == 0) {
             inAnOrderlyFashion("text");
             g.strokeStyle = pickAColourAnyColour();
+            g.scale(1 + boomParam * 3, 1 + boomParam * 3);
             textInOrder();
             resetTransform();
         }
@@ -222,71 +321,145 @@ function start() {
 
     function qq(time, frame) {
         g.strokeStyle = pickAColourAnyColour();
-        if (frame % 1 == 0) {
-            rotoZoom(1.00,  tau / 3000);
-            //fade(0.01);
-        }
-        if (Math.random() < 0.01) {
-            //fade(1);
-        }
-        if (frame % 2 == 0) {
-            divideAndConquer();
+
+        for (let i = 0; i < 2 ; i ++) {
+            let subframe = frame * 2 + i;
+            const angle = (time + (i * 0.5/fps)) * 40 * tau / 3000;
+            rotoZoom(1,  angle,1 + param1/3);
+
+            if (subframe % 2 == 0) {
+                divideAndConquer(angle * 2);
+            }
+
         }
 
-        if(frame % 3000 < 10) {
+        if (frame % 2 == 0) {
+            somewhereSomehow();
+            g.scale(4,4);
+            //textInOrder();
+            resetTransform();
+        }
+
+        if(boomParam > 0.4) {
             //somewhereSomehow();
             inTheMiddle();
-            //textInOrder();
+            g.globalCompositeOperation = "lighter";
             nought();
             resetTransform();
-            somewhereSomehow();
-            //why();
-            resetTransform();
+            g.globalCompositeOperation = "source-over";
         }
+        resetTransform();
     }
 
-    function lx(time, frame) {
-        inAnOrderlyFashion("q");
-
-        //blurr();
-        if (frame % 2 == 0) {
-            rotoZoom(1.1, 0);
+    function makeCube(n) {
+        const factor = 1 / Math.cos(tau / 8);
+        let edges = [];
+        for (let i = 0; i < n; i++) {
+            let x = factor * Math.cos((tau / 8) + i * tau / n);
+            let y = factor * Math.sin((tau / 8) + i * tau / n);
+            let x2 = factor * Math.cos((tau / 8) + (i+1) * tau / n);
+            let y2 = factor * Math.sin((tau / 8) + (i+1) * tau / n);
+            edges.push([[x,y,-1],[x,y,1]]);
+            edges.push([[x,y,-1],[x2,y2,-1]]);
+            edges.push([[x,y,1],[x2,y2,1]]);
         }
-        g.scale(Math.random() *2+1, Math.random() * 2+1);
+        return edges;
+    }
+
+    let theCube = makeCube(4);
+
+    bindKeyPress("c", function() {
+        theCube = makeCube(Math.floor(Math.random() * 6) + 2)
+    });
+
+
+    function cube(xrot,yrot,zrot) {
+        const dist = 3;
+
+        function project(xyz) {
+            return [
+                xyz[0] / xyz[2],
+                xyz[1] / xyz[2]
+            ]
+        }
+
+        function translate(xyz) {
+            return [
+                xyz[0], xyz[1], xyz[2] + dist
+            ]
+        }
+
+        function rZ(p, a) {
+            return [Math.cos(a) * p[0] - Math.sin(a) * p[1], Math.sin(a) * p[0] + Math.cos(a) * p[1], p[2]];
+        }
+
+        function rY(p, a) {
+            return [Math.cos(a) * p[0] - Math.sin(a) * p[2], p[1], Math.sin(a) * p[0] + Math.cos(a) * p[2]];
+        }
+
+        function rX(p, a) {
+            return [p[0], Math.cos(a) * p[1] - Math.sin(a) * p[2], Math.sin(a) * p[1] + Math.cos(a) * p[2]];
+        }
+
+        function compute(p) {
+            return project(
+                translate(
+                    rZ(rY(rX(p, xrot), yrot), zrot)
+                )
+            )
+        }
+
+
+        g.beginPath();
+        for (let i = 0; i < theCube.length; i++) {
+            let edge = theCube[i];
+            let a = compute(edge[0]);
+            let b = compute(edge[1]);
+            g.moveTo(a[0], a[1]);
+            g.lineTo(b[0], b[1]);
+        }
+        g.lineWidth = 0.01;
+        g.stroke();
+    }
+
+
+
+
+    function lx(time, frame) {
+        const tf = 0.8;
+        fade(0.07);
+        divideAndConquer(0, "lighten");
+        g.translate(param1 * w / 2, param2 * h / 2);
+        g.strokeStyle = pickAColourAnyColour();
         g.globalCompositeOperation = "lighter";
-        textInOrder();
+        g.scale(200 + boomParam * 300,200 + boomParam * 300);
+        cube(tf * tau * time / 5, tf * tau * time / 6, tf * tau * time / 7);
         g.globalCompositeOperation = "source-over";
         resetTransform();
     }
 
-    var keyActions = {};
 
-    function bindKey(key, action) {
-        keyActions[key] = action;
-    }
 
-    function unbindKey(key, action) {
-        delete(keyActions[key]);
-    }
-    window.addEventListener("keypress", function(e) {
-        if (keyActions[e.key] != null) {
-            keyActions[e.key]();
-        }
-    });
 
-    const fps = 40;
+
     let frame = 0;
-    let timestep = 1/fps;
-    bindKey("p", function() { timestep += 1/fps });
-    bindKey("o", function() { timestep -= 1/fps });
 
     let time = 0;
 
-    let drawFrame = qq;
+    const scenes = [lx, qq, sundayClubXO];
+    let currentScene = 0;
+
+    bindKeyPress("j", function() {
+       currentScene = (currentScene + 1) % scenes.length;
+    });
+
+    let drawFrame = lx;
     function doFrame() {
         frame++;
         time += timestep;
-        drawFrame(time, frame);
+        scenes[currentScene](time, frame);
+        //drawFrame(time, frame);
+        handleKeys();
         // for (var i=0; i < features.length; i++) {
         //     if (enabled[i]) features[i](time);
         // }
