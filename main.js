@@ -202,10 +202,11 @@ function start() {
 
         bg.setTransform(1,0,0,1,0,0);
 
-        g.globalCompositeOperation = op != null ? op : "screen";
+        g.globalCompositeOperation = op != null ? op : "lighter";
         g.rotate(rot);
         //g.globalAlpha = 0.9;
-        g.drawImage(buffer, -w/2,-h/2);
+        g.drawImage(buffer, -w/2, -h/2);
+
         resetTransform();
         g.globalCompositeOperation = "source-over";
     }
@@ -217,16 +218,21 @@ function start() {
         g.filter = "none";
     }
 
-    function rotoZoom(sf, rot, zoom) {
+    function rotoZoom(sf, rot, zoom, op) {
         bg.clearRect(0,0,w,h);
         bg.scale(sf, sf);
 
         bg.drawImage(canvas, w * (1-sf) * 0.5/ sf, h * (1-sf) * 0.5 / sf);
         bg.setTransform(1,0,0,1,0,0);
-        g.globalCompositeOperation = "difference";
+        g.globalCompositeOperation = op == null ? "difference" : op;
         g.rotate(rot);
         g.scale(zoom,zoom);
-        g.drawImage(buffer, -w/2, -h/2);
+        for (let xx =-1; xx < 2; xx++) {
+            for (let yy = -1; yy < 2; yy++) {
+                g.drawImage(buffer, xx * w + -w/2, yy * h + -h/2);
+            }
+        }
+
         resetTransform();
         g.globalCompositeOperation = "source-over";
     }
@@ -278,6 +284,8 @@ function start() {
     function sundayClubXO(time,frame) {
         if (Math.random() < 0.1) {
            divideAndConquer(0);
+           rotoZoom(1,param1 * tau,1, "source-over");
+           //blurr(2);
         }
         if (Math.random() < 0.03) {
             fade(1);
@@ -296,12 +304,14 @@ function start() {
         while (Math.random() < 0.2) {
             g.strokeStyle = pickAColourAnyColour();
             inAnOrderlyFashion("xo");
-            if (Math.random() < 0.7) {
+            if (boomParam > 0.5) {
+                grid()
+            } else if (Math.random() < 0.7) {
                 cross();
             } else if (Math.random() < 0.7) {
                 nought();
             } else {
-                grid();
+                cube(Math.random() * tau,math.random() * tau,Math.random() * tau,0.1);
             }
             resetTransform();
         }
@@ -325,7 +335,7 @@ function start() {
         for (let i = 0; i < 2 ; i ++) {
             let subframe = frame * 2 + i;
             const angle = (time + (i * 0.5/fps)) * 40 * tau / 3000;
-            rotoZoom(1,  angle,1 + param1/3);
+            rotoZoom(1,  angle, 1 + param1/3);
 
             if (subframe % 2 == 0) {
                 divideAndConquer(angle * 2);
@@ -333,14 +343,17 @@ function start() {
 
         }
 
-        if (frame % 2 == 0) {
-            somewhereSomehow();
-            g.scale(4,4);
-            //textInOrder();
-            resetTransform();
+        if (boomParam > 0.4) {
+            fade(0.1);
+            for (let x = 0; x < 10; x++) {
+                somewhereSomehow()
+                g.scale(4, 4);
+                nought();
+                resetTransform();
+            }
         }
 
-        if(boomParam > 0.4) {
+        if(boomParam > 2) {
             //somewhereSomehow();
             inTheMiddle();
             g.globalCompositeOperation = "lighter";
@@ -373,7 +386,7 @@ function start() {
     });
 
 
-    function cube(xrot,yrot,zrot) {
+    function cube(xrot,yrot,zrot, linewidth) {
         const dist = 3;
 
         function project(xyz) {
@@ -418,7 +431,7 @@ function start() {
             g.moveTo(a[0], a[1]);
             g.lineTo(b[0], b[1]);
         }
-        g.lineWidth = 0.01;
+        g.lineWidth = linewidth == null ? 0.01 : linewidth;
         g.stroke();
     }
 
@@ -447,7 +460,7 @@ function start() {
     let time = 0;
 
     const scenes = [lx, qq, sundayClubXO];
-    let currentScene = 0;
+    let currentScene = 1;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
