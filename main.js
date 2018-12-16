@@ -554,13 +554,56 @@ function start() {
         resetTransform();
     }
 
+    function tree(sway) {
+        let begin = [0,1,0];
+        let unit = [0,-1,0];
+        let edges = [];
+        const nBranch = 3;
+        const spread = (Math.sin(sway) + 1.3)/2;
+        function recurse(s, ry, rz, scale, depth) {
+            let rotated = rZ(rX(unit, rz), ry);
+            let end = [s[0]+rotated[0] * scale, s[1] + rotated[1] * scale, s[2] + rotated[2] * scale];
+            edges.push([s, end]);
+            if (depth > 7) return;
+
+            for (let y = 0; y < nBranch; y++) {
+                recurse(
+                    end,
+                    Math.cos(y * tau / nBranch) * spread + ry,
+                    Math.sin(y * tau / nBranch) * spread + rz,
+                    scale * (0.66 + 0.05 * Math.sin(sway + y * tau / nBranch)),
+                    depth + 1
+                );
+            }
+        }
+
+        recurse(begin, 0, 0, 0.5, 0);
+        return edges;
+    }
+
+    function treez(time, frame) {
+        g.globalCompositeOperation = "source-over";
+        //divideAndConquer(tau/4, "source-over");
+        fade(0.2);
+        // if (boomParam > 0.8) {
+        //     rotoZoom(1, 0, 1 + param1 * 0.1, "lighten");
+        // } else {
+        //     rotoZoom(1, 0, 1 + param1 * 0.1, "difference");
+        // }
+        g.scale(sf *(1.5 + boomParam), sf * (1.5 + boomParam));
+        g.strokeStyle = pickAColourAnyColour();
+        g.globalCompositeOperation = "lighter";
+        draw3d(tree(param1 * tau + time), 0, time/10, 0, 0.0007, 1.5 + param2);
+        resetTransform();
+    }
+
 
     let frame = 0;
 
     let time = 0;
 
-    const scenes = [lx, qq, linez, spiralz];
-    let currentScene = 3;
+    const scenes = [lx, qq, linez, spiralz, treez];
+    let currentScene = 4;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
