@@ -385,54 +385,58 @@ function start() {
         theCube = makeCube(Math.floor(Math.random() * 6) + 2)
     });
 
+    function project(xyz) {
+        return [
+            xyz[0] / xyz[2],
+            xyz[1] / xyz[2],
+            xyz[2]
+        ]
+    }
 
-    function cube(xrot,yrot,zrot, linewidth) {
-        const dist = 3;
+    function translate(xyz, dist) {
+        return [
+            xyz[0], xyz[1], xyz[2] + dist
+        ]
+    }
 
-        function project(xyz) {
-            return [
-                xyz[0] / xyz[2],
-                xyz[1] / xyz[2]
-            ]
-        }
+    function rZ(p, a) {
+        return [Math.cos(a) * p[0] - Math.sin(a) * p[1], Math.sin(a) * p[0] + Math.cos(a) * p[1], p[2]];
+    }
 
-        function translate(xyz) {
-            return [
-                xyz[0], xyz[1], xyz[2] + dist
-            ]
-        }
+    function rY(p, a) {
+        return [Math.cos(a) * p[0] - Math.sin(a) * p[2], p[1], Math.sin(a) * p[0] + Math.cos(a) * p[2]];
+    }
 
-        function rZ(p, a) {
-            return [Math.cos(a) * p[0] - Math.sin(a) * p[1], Math.sin(a) * p[0] + Math.cos(a) * p[1], p[2]];
-        }
+    function rX(p, a) {
+        return [p[0], Math.cos(a) * p[1] - Math.sin(a) * p[2], Math.sin(a) * p[1] + Math.cos(a) * p[2]];
+    }
 
-        function rY(p, a) {
-            return [Math.cos(a) * p[0] - Math.sin(a) * p[2], p[1], Math.sin(a) * p[0] + Math.cos(a) * p[2]];
-        }
-
-        function rX(p, a) {
-            return [p[0], Math.cos(a) * p[1] - Math.sin(a) * p[2], Math.sin(a) * p[1] + Math.cos(a) * p[2]];
-        }
-
+    function draw3d(edges, xrot, yrot, zrot, linewidth, dist) {
         function compute(p) {
             return project(
                 translate(
-                    rZ(rY(rX(p, xrot), yrot), zrot)
+                    rZ(rY(rX(p, xrot), yrot), zrot),
+                    dist
                 )
             )
         }
-
-
         g.beginPath();
-        for (let i = 0; i < theCube.length; i++) {
-            let edge = theCube[i];
+        for (let i = 0; i < edges.length; i++) {
+            let edge = edges[i];
             let a = compute(edge[0]);
             let b = compute(edge[1]);
-            g.moveTo(a[0], a[1]);
-            g.lineTo(b[0], b[1]);
+            if (a[2] > 0.01 && b[2] > 0.01) {
+                g.moveTo(a[0], a[1]);
+                g.lineTo(b[0], b[1]);
+            }
         }
+
         g.lineWidth = linewidth == null ? 0.01 : linewidth;
         g.stroke();
+    }
+
+    function cube(xrot,yrot,zrot, linewidth) {
+        draw3d(theCube, xrot, yrot, zrot, linewidth, 3);
     }
 
 
@@ -451,6 +455,69 @@ function start() {
         resetTransform();
     }
 
+    function makeShape(n) {
+        let shape = [];
+        let verts = [];
+        let sx = 0;
+        let sy = 0;
+        let sz = 0;
+        for (let i = 0 ; i < n; i++) {
+
+            sx = sx + Math.random()* 0.4-0.2;
+            sy = sy + Math.random()* 0.4-0.2;
+            sz = sz + Math.random()* 0.4-0.2;
+            verts.push([sx, sy, sz]);
+            if (Math.abs(sx) > 1) sx *= 0.8;
+            if (Math.abs(sy) > 1) sy *= 0.8;
+            if (Math.abs(sz) > 1) sz *= 0.8;
+        }
+        for (let i = 0; i < n-1; i++) {
+            shape.push([verts[i], verts[(i+1) % n]]);
+        }
+        return shape;
+    }
+
+    function makeShape2(n) {
+        let shape = [];
+        let verts = [];
+        for (let i = 0 ; i < n; i++) {
+            verts.push([Math.random()*2 -1, Math.random() * 2 -1, Math.random() *2 -1]);
+        }
+        for (let i = 0; i < n; i++) {
+            shape.push([verts[i], verts[(i+1) % n]]);
+        }
+        return shape;
+    }
+
+    let currentShape = makeShape(20);
+
+    function linez(time, frame) {
+        if (boomParam > 0.7 || frame < 2) {
+            currentShape = [];
+            for (let z = 0; z < 5; z++) {
+                currentShape = currentShape.concat(makeShape(Math.floor(Math.random() * 20 + 5)));
+            }
+        }
+        g.globalCompositeOperation = "source-over";
+        fade(0.3);
+        divideAndConquer(tau/2,"lighten");
+        g.lineWidth = 0.05;
+        g.scale(sf *2, sf * 2);
+        g.globalCompositeOperation = "lighter";
+        for (let q = 0; q < 1; q++) {
+            g.strokeStyle = pickAColourAnyColour();
+            draw3d(
+                currentShape,
+                (time / 200) * tau + param1 * tau,
+                (time / 240) * tau + param2 * tau,
+                (q * tau / 4) + (time / 149) * tau + 0.01,
+                0.001,
+                -Math.sin(time / 80 * tau) * 2 + 2.3
+            );
+        }
+        resetTransform();
+    }
+
 
 
 
@@ -459,8 +526,8 @@ function start() {
 
     let time = 0;
 
-    const scenes = [lx, qq, sundayClubXO];
-    let currentScene = 1;
+    const scenes = [lx, qq, linez];
+    let currentScene = 2;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
