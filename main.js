@@ -593,7 +593,7 @@ function start() {
         g.scale(sf *(1.5 + boomParam), sf * (1.5 + boomParam));
         g.strokeStyle = pickAColourAnyColour();
         g.globalCompositeOperation = "lighter";
-        draw3d(tree(param1 * tau + time), 0, time/10, 0, 0.0007, 1.5 + param2);
+        draw3d(tree(time), param1 * tau, time/10, 0, 0.0007, 1.5 + param2);
         resetTransform();
     }
 
