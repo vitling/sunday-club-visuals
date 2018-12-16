@@ -522,14 +522,18 @@ function start() {
     function spir(twist) {
         let edges = [];
         let verts = [];
-
-        for (let y = -1; y < 1 ; y +=0.032) {
+        let verts2 = [];
+        //const step = 0.002;
+        const step = 0.032;
+        for (let y = -1; y < 1 ; y += step) {
             let angle = y * twist;
-            verts.push([Math.cos(angle) * Math.abs(y + 1) / 2, y,  Math.sin(angle) * Math.abs(y + 1) / 2])
+            verts.push([Math.cos(angle) * Math.abs(y + 1) / 2, y,  Math.sin(angle) * Math.abs(y + 1) / 2]);
+            verts2.push([Math.cos(-angle) * Math.abs(-y + 1) / 2, y,  Math.sin(-angle) * Math.abs(-y + 1) / 2]);
         }
 
         for (let q = 0; q < verts.length-1; q++) {
             edges.push([verts[q], verts[q+1]]);
+            edges.push([verts2[q], verts2[q+1]]);
         }
 
         return edges;
@@ -537,16 +541,16 @@ function start() {
 
     function spiralz(time, frame) {
         g.globalCompositeOperation = "source-over";
-        fade(0.03);
-        if (boomParam > 0.8) {
-            rotoZoom(1, 0, 1 + param1 * 0.1, "lighten");
-        } else {
-            rotoZoom(1, 0, 1 + param1 * 0.1, "difference");
-        }
+        fade(0.2);
+        // if (boomParam > 0.8) {
+        //     rotoZoom(1, 0, 1 + param1 * 0.1, "lighten");
+        // } else {
+        //     rotoZoom(1, 0, 1 + param1 * 0.1, "difference");
+        // }
         g.scale(sf *(1.5 + boomParam), sf * (1.5 + boomParam));
         g.strokeStyle = pickAColourAnyColour();
         g.globalCompositeOperation = "lighter";
-        draw3d(spir(Math.sin(time/30) * 100), param2 * tau, 0, 0, 0.002, 2.5);
+        draw3d(spir(Math.sin(time/30) * 100), param2 * tau, 0, param1 * tau, 0.002, 2.5);
         resetTransform();
     }
 
