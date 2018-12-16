@@ -463,9 +463,9 @@ function start() {
         let sz = 0;
         for (let i = 0 ; i < n; i++) {
 
-            sx = sx + Math.random()* 0.4-0.2;
-            sy = sy + Math.random()* 0.4-0.2;
-            sz = sz + Math.random()* 0.4-0.2;
+            sx = sx + Math.random()* 0.2-0.1;
+            sy = sy + Math.random()* 0.2-0.1;
+            sz = sz + Math.random()* 0.2-0.1;
             verts.push([sx, sy, sz]);
             if (Math.abs(sx) > 1) sx *= 0.8;
             if (Math.abs(sy) > 1) sy *= 0.8;
@@ -494,8 +494,8 @@ function start() {
     function linez(time, frame) {
         if (boomParam > 0.7 || frame < 2) {
             currentShape = [];
-            for (let z = 0; z < 5; z++) {
-                currentShape = currentShape.concat(makeShape(Math.floor(Math.random() * 20 + 5)));
+            for (let z = 0; z < 1; z++) {
+                currentShape = currentShape.concat(makeShape(200));
             }
         }
         g.globalCompositeOperation = "source-over";
@@ -504,30 +504,59 @@ function start() {
         g.lineWidth = 0.05;
         g.scale(sf *2, sf * 2);
         g.globalCompositeOperation = "lighter";
-        for (let q = 0; q < 1; q++) {
+        const r = 3;
+        for (let q = 0; q < r; q++) {
             g.strokeStyle = pickAColourAnyColour();
             draw3d(
                 currentShape,
                 (time / 200) * tau + param1 * tau,
                 (time / 240) * tau + param2 * tau,
-                (q * tau / 4) + (time / 149) * tau + 0.01,
+                (q * tau / r) + (time / 149) * tau + 0.01,
                 0.001,
-                -Math.sin(time / 80 * tau) * 2 + 2.3
+                Math.sin(time / 80 * tau) * 2 + 2.3
             );
         }
         resetTransform();
     }
 
+    function spir(twist) {
+        let edges = [];
+        let verts = [];
 
+        for (let y = -1; y < 1 ; y +=0.032) {
+            let angle = y * twist;
+            verts.push([Math.cos(angle) * Math.abs(y + 1) / 2, y,  Math.sin(angle) * Math.abs(y + 1) / 2])
+        }
 
+        for (let q = 0; q < verts.length-1; q++) {
+            edges.push([verts[q], verts[q+1]]);
+        }
+
+        return edges;
+    }
+
+    function spiralz(time, frame) {
+        g.globalCompositeOperation = "source-over";
+        fade(0.03);
+        if (boomParam > 0.8) {
+            rotoZoom(1, 0, 1 + param1 * 0.1, "lighten");
+        } else {
+            rotoZoom(1, 0, 1 + param1 * 0.1, "difference");
+        }
+        g.scale(sf *(1.5 + boomParam), sf * (1.5 + boomParam));
+        g.strokeStyle = pickAColourAnyColour();
+        g.globalCompositeOperation = "lighter";
+        draw3d(spir(Math.sin(time/30) * 100), param2 * tau, 0, 0, 0.002, 2.5);
+        resetTransform();
+    }
 
 
     let frame = 0;
 
     let time = 0;
 
-    const scenes = [lx, qq, linez];
-    let currentScene = 2;
+    const scenes = [lx, qq, linez, spiralz];
+    let currentScene = 3;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
