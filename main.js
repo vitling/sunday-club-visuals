@@ -99,6 +99,9 @@ function start() {
         g.setTransform(1,0,0,1,0,0);
         g.translate(w / 2, h / 2);
     }
+    function resetTransformAbs() {
+        g.setTransform(1,0,0,1,0,0);
+    }
     resetTransform();
 
 
@@ -554,17 +557,17 @@ function start() {
         resetTransform();
     }
 
-    function tree(sway) {
+    function tree(nBranch, maxDepth, sway) {
         let begin = [0,1,0];
         let unit = [0,-1,0];
         let edges = [];
-        const nBranch = 3;
+        //const nBranch = 3;
         const spread = (Math.sin(sway) + 1.3)/2;
         function recurse(s, ry, rz, scale, depth) {
             let rotated = rZ(rX(unit, rz), ry);
             let end = [s[0]+rotated[0] * scale, s[1] + rotated[1] * scale, s[2] + rotated[2] * scale];
             edges.push([s, end]);
-            if (depth > 7) return;
+            if (depth > maxDepth) return;
 
             for (let y = 0; y < nBranch; y++) {
                 recurse(
@@ -593,17 +596,16 @@ function start() {
         g.scale(sf *(1.5 + boomParam), sf * (1.5 + boomParam));
         g.strokeStyle = pickAColourAnyColour();
         g.globalCompositeOperation = "lighter";
-        draw3d(tree(time), param1 * tau, time/10, 0, 0.0007, 1.5 + param2);
+        draw3d(tree(6,4,param1), 0, time/10, 0, 0.0007, 1 + param2);
         resetTransform();
     }
-
 
     let frame = 0;
 
     let time = 0;
 
     const scenes = [lx, qq, linez, spiralz, treez];
-    let currentScene = 4;
+    let currentScene = 5;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
