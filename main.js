@@ -605,7 +605,7 @@ function start() {
     let time = 0;
 
     const scenes = [lx, qq, linez, spiralz, treez];
-    let currentScene = 5;
+    let currentScene = 4;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
