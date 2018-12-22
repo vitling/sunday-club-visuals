@@ -643,21 +643,22 @@ function start() {
         wobble = wobble + (boomParam - wobble) / 10;
 
         g.globalCompositeOperation = "source-over";
-        fade(1);
+        fade(0.3);
         g.globalCompositeOperation = "lighter";
 
         g.strokeStyle = pickAColourAnyColour();
-        g.scale(500 + param2 * 300,500 + param2 * 300);
+        g.scale(500 + 0 * 300,500 + 0 * 300);
 
-        function shader(xyz) {
+        function shader(v) {
+            // const d = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+            // const sf = Math.sin(time)+d;
             return [
-                xyz[0],
-                xyz[1],
-                xyz[2]
+                v[0] - wobble * Math.sin(v[1] + time * tau) / 4,
+                v[1] - wobble * Math.sin(v[2] + time * tau) / 4,
+                v[2] - wobble * Math.sin(v[0] + time * tau) / 4
             ];
         }
-        draw3d(theCubeGrid, time / 4.2,param1 * tau, time / 27,(4 - param2 * 3) / 1000,param2 * 10, shader);
-
+        draw3d(theCubeGrid, time / 8.2,param1 * tau, param2 + time / 27,0.002,param2 * 10 + 10, shader);
         resetTransform();
     }
 
