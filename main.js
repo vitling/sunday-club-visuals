@@ -396,10 +396,18 @@ function start() {
         ]
     }
 
-    function translate(xyz, dist) {
+    function moveFromCamera(xyz, dist) {
         return [
             xyz[0], xyz[1], xyz[2] + dist
         ]
+    }
+
+    function translate3d(edges, xyz) {
+        return edges.map(function(edge) {
+            return edge.map(function(vertex) {
+                return [vertex[0] + xyz[0], vertex[1] + xyz[1], vertex[2] + xyz[2]]
+            });
+        });
     }
 
     function rZ(p, a) {
@@ -414,11 +422,13 @@ function start() {
         return [p[0], Math.cos(a) * p[1] - Math.sin(a) * p[2], Math.sin(a) * p[1] + Math.cos(a) * p[2]];
     }
 
-    function draw3d(edges, xrot, yrot, zrot, linewidth, dist) {
+    function draw3d(edges, xrot, yrot, zrot, linewidth, dist, shader) {
+        if (shader == null) { shader = function(xyz) { return xyz; }; }
+
         function compute(p) {
             return project(
-                translate(
-                    rZ(rY(rX(p, xrot), yrot), zrot),
+                moveFromCamera(
+                    rZ(rY(rX(shader(p), xrot), yrot), zrot),
                     dist
                 )
             )
@@ -593,10 +603,61 @@ function start() {
         // } else {
         //     rotoZoom(1, 0, 1 + param1 * 0.1, "difference");
         // }
-        g.scale(sf *(1.5 + boomParam), sf * (1.5 + boomParam));
+        g.scale(sf * (1.5 + boomParam), sf * (1.5 + boomParam));
         g.strokeStyle = pickAColourAnyColour();
         g.globalCompositeOperation = "lighter";
-        draw3d(tree(6,4,param1), 0, time/10, 0, 0.0007, 1 + param2);
+        draw3d(tree(6, 4, param1), 0, time / 10, 0, 0.0007, 1 + param2);
+        resetTransform();
+    }
+
+    function circlez(time, frame) {
+        g.globalCompositeOperation = "source-over";
+        fade(0.9-boomParam);
+        g.strokeStyle = pickAColourAnyColour();
+        g.globalCompositeOperation = "difference";
+        g.lineWidth = 2;
+        for (let i = 0; i < 40; i++) {
+            g.beginPath();
+            g.arc(param1 * w / 2, param2 * h / 2, Math.abs(10 + i * 20 + 50 * Math.sin(time + (i/4))), 0, tau);
+            g.stroke();
+        }
+        resetTransform();
+    }
+
+    function cubeGrid(n) {
+        let edges = [];
+        let no = (n-1)/2;
+        for (let x = 0 ; x < n ; x ++) {
+            for (let y = 0; y < n; y ++) {
+                for (let z = 0; z < n; z++) {
+                    edges.push(...translate3d(makeCube(4), [(x-no)*5,(y-no)*5,(z-no)*5]));
+                }
+            }
+        }
+        return edges;
+    }
+
+    let theCubeGrid = cubeGrid(7);
+    let wobble = 0;
+    function cubez(time, frame) {
+        wobble = wobble + (boomParam - wobble) / 10;
+
+        g.globalCompositeOperation = "source-over";
+        fade(1);
+        g.globalCompositeOperation = "lighter";
+
+        g.strokeStyle = pickAColourAnyColour();
+        g.scale(500 + param2 * 300,500 + param2 * 300);
+
+        function shader(xyz) {
+            return [
+                xyz[0],
+                xyz[1],
+                xyz[2]
+            ];
+        }
+        draw3d(theCubeGrid, time / 4.2,param1 * tau, time / 27,(4 - param2 * 3) / 1000,param2 * 10, shader);
+
         resetTransform();
     }
 
@@ -604,8 +665,8 @@ function start() {
 
     let time = 0;
 
-    const scenes = [lx, qq, linez, spiralz, treez];
-    let currentScene = 4;
+    const scenes = [lx, qq, linez, spiralz, treez, circlez, cubez];
+    let currentScene = 6;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
