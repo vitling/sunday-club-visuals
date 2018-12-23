@@ -502,13 +502,13 @@ function start() {
         return shape;
     }
 
-    let currentShape = makeShape(20);
+    let currentShape = makeShape(100);
 
     function linez(time, frame) {
         if (boomParam > 0.7 || frame < 2) {
             currentShape = [];
             for (let z = 0; z < 1; z++) {
-                currentShape = currentShape.concat(makeShape(200));
+                currentShape = currentShape.concat(makeShape(100));
             }
         }
         g.globalCompositeOperation = "source-over";
@@ -647,7 +647,7 @@ function start() {
         g.globalCompositeOperation = "lighter";
 
         g.strokeStyle = pickAColourAnyColour();
-        g.scale(500 + 0 * 300,500 + 0 * 300);
+        g.scale(500,500);
 
         function shader(v) {
             // const d = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
@@ -662,12 +662,81 @@ function start() {
         resetTransform();
     }
 
+    let N = 40;
+    function spindlez(time, frame) {
+        g.globalCompositeOperation = "source-over";
+        fade(0.2);
+        const shp = [
+            [[1,0,0],[0,0,1]],
+            [[0,0,1],[0,1,1]],
+            [[0,1,1],[1,1,1]],
+            [[1,1,1],[1,0,0]]
+        ];
+
+        function shader(v) {
+            return [
+                v[0]+ Math.sin(v[1] + time * tau * 4) * boomParam,
+                v[1],
+                v[2]
+            ]
+        }
+        g.scale(h,h);
+        g.globalCompositeOperation = "lighter";
+        for (let i = 0; i < N; i++) {
+            g.strokeStyle = pickAColourAnyColour();
+            const f = i/N * tau;
+            draw3d(shp, time / 10, param1 * tau, f + time / 30, 0.001, (param2 + 1.5) * 3, shader);
+        }
+        resetTransform();
+    }
+
+
+
+
+    function somethingElse(time, frame) {
+        resetTransform();
+        g.globalCompositeOperation = "source-over";
+        g.lineWidth = 2;
+        fade(1);
+        g.globalCompositeOperation = "lighter";
+
+        let x = Math.cos(0.2 * time * 3) * Math.sin(0.2 * time * 0.7) * w / 2;
+        let y = Math.cos(0.2 * time * 4) * Math.sin(0.2 * time * 0.8) * h / 2;
+        let x2 = Math.cos(0.2 * time * 5) * Math.sin(0.2 * time * 0.9) * w / 2;
+        let y2 = Math.cos(0.2 * time * 6) * Math.sin(0.2 * time) * h / 2;
+
+        let clearX = (Math.random() - 0.5) * w;
+        let clearY = (Math.random() - 0.5) * h;
+
+        const shards = 32;
+        for (let i = 0; i < shards; i ++) {
+
+            g.rotate(Math.cos(time) * tau / 256 + param1 * tau/32);
+
+            let sat = Math.floor(100 * (1 - boomParam));
+
+            let col = "hsl(" + Math.floor(i * 360 / shards) + ",90%,50%)";
+            g.strokeStyle = col;
+            g.beginPath();
+            g.moveTo(x, y);
+            g.lineTo(x2, y2);
+            g.stroke();
+            g.fillStyle = col;
+
+            let p2 = param2 + Math.cos(time) * 0.1;
+            g.fillRect(x * p2,y * p2, Math.abs(p2 * 10),Math.abs(p2 * 10));
+            g.fillRect(x2 * p2,y2 * p2,Math.abs(p2 * 10),Math.abs(p2 * 10));
+
+        }
+
+    }
+
     let frame = 0;
 
     let time = 0;
 
-    const scenes = [lx, qq, linez, spiralz, treez, circlez, cubez];
-    let currentScene = 6;
+    const scenes = [lx, qq, linez, spiralz, treez, circlez, cubez, spindlez, somethingElse];
+    let currentScene = 8;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
@@ -685,8 +754,6 @@ function start() {
         // }
     }
     window.setInterval(doFrame, 1000/fps);
-
-    cross(0.1);
 
 }
 window.addEventListener("load", start);
