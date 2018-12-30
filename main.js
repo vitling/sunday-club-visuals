@@ -693,7 +693,7 @@ function start() {
 
 
 
-    function somethingElse(time, frame) {
+    function rainbowStyle(time, frame) {
         resetTransform();
         g.globalCompositeOperation = "source-over";
         g.lineWidth = 2;
@@ -715,7 +715,10 @@ function start() {
 
             let sat = Math.floor(100 * (1 - boomParam));
 
-            let col = "hsl(" + Math.floor(i * 360 / shards) + ",90%,50%)";
+            let hue = Math.floor(i * 360 / shards);
+
+
+            let col = "hsl(" + hue + ",90%,50%)";
             g.strokeStyle = col;
             g.beginPath();
             g.moveTo(x, y);
@@ -727,16 +730,101 @@ function start() {
             g.fillRect(x * p2,y * p2, Math.abs(p2 * 10),Math.abs(p2 * 10));
             g.fillRect(x2 * p2,y2 * p2,Math.abs(p2 * 10),Math.abs(p2 * 10));
 
-        }
+            if (boomParam > 0.3) {
+                g.beginPath();
+                g.fillStyle = "hsl(" + hue + ",90%," + (boomParam * 10) + "%)";
+                g.moveTo(0,0);
+                g.lineTo(clearX, clearY);
+                g.lineTo(-clearX, clearY);
+                //g.closePath();
+                g.fill();
 
+                //g.stroke();
+            }
+        }
+    }
+
+    function ambiente(time, frame) {
+        resetTransform();
+        g.globalCompositeOperation = "source-over";
+        g.lineWidth = 1;
+        fade(0.6);
+        g.globalCompositeOperation = "lighter";
+
+        const lines = 40 + (boomParam * 100);
+        const segments = 80;
+
+        for (let i = 0; i < lines; i++) {
+            g.beginPath();
+
+            for (let s = 0; s < segments; s++) {
+                let x0 = s/segments;
+                let y0 = i/lines;
+
+                let x = w * (x0 - 0.5) + Math.sin(time * 5 + y0 * 10) * 20;
+                let y =
+                    h * (y0 - 0.5)
+                    + Math.sin(param1 * tau * y0 * 10) * 100
+                    + Math.sin(20 * x0 + Math.sin(time/2) * 30 * (y0 - 0.5)) * 10 * param2 *  h/lines;
+                if (s == 0) {
+                    g.moveTo(x, y);
+                }
+                g.lineTo(x, y);
+            }
+            g.strokeStyle = pickAColourAnyColour();
+            g.stroke();
+        }
+    }
+
+    let factors = [];
+
+    function startOfDreams(time, frame) {
+        const tings = 20;
+        if (frame == 1 || boomParam > 0.8) {
+            factors = [];
+            for (let i = 0; i < tings; i++) {
+                factors.push([Math.random(), Math.random(), Math.random()]);
+            }
+        }
+        resetTransform();
+        g.globalCompositeOperation = "source-over";
+        fade(0.03);
+        rotoZoom(1,tau/5,1 + param2 * 0.1,"source-over");
+
+        g.lineWidth = 1;
+        g.globalCompositeOperation = "lighter";
+
+        g.globalAlpha = 0.1;
+        for (let j = 0 ; j < 50; j++) {
+            g.beginPath();
+            let xo = 200 * Math.pow(Math.random()-0.5, 3);
+            let yo = 200 * Math.pow(Math.random()-0.5, 3);
+            g.strokeStyle = pickAColourAnyColour();
+
+
+            for (let i = 0; i < tings; i++) {
+                let xf = xo + factors[i][2] * w * 0.5 * Math.sin(time * factors[i][0]);
+                let yf = yo + factors[i][2] * h * 0.5 * Math.sin(time * factors[i][1]);
+
+                if (i == 0) {
+                    g.moveTo(xf, yf);
+                } else {
+                    g.lineTo(xf, yf);
+                }
+            }
+            g.closePath();
+            g.stroke();
+        }
+        g.globalAlpha = 1;
+        g.resetTransform();
     }
 
     let frame = 0;
 
     let time = 0;
 
-    const scenes = [lx, qq, linez, spiralz, treez, circlez, cubez, spindlez, somethingElse];
-    let currentScene = 8;
+    const scenes = [lx, qq, linez, spiralz, treez, circlez, cubez, spindlez, rainbowStyle, ambiente, startOfDreams];
+    let currentScene = 10;
 
     bindKeyPress("j", function() {
        currentScene = (currentScene + 1) % scenes.length;
